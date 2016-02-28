@@ -12,10 +12,15 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-
-
+    var settings: UIUserNotificationSettings?
+  
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
         // Override point for customization after application launch.
+        
+        settings = UIUserNotificationSettings(forTypes: [.Alert, .Badge, .Sound], categories: nil)
+        UIApplication.sharedApplication().registerUserNotificationSettings(settings!)
+        UIApplication.sharedApplication().registerForRemoteNotifications()
+ 
         return true
     }
 
@@ -40,7 +45,92 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
+    
+    func application(application: UIApplication,didRegisterForRemoteNotificationsWithDeviceToken deviceToken: NSData) {
+        //send this device token to server
+        
+        print("Got token data! \(deviceToken)")
+        
+        // Prepare device token to have a proper format
+        let characterSet: NSCharacterSet = NSCharacterSet( charactersInString: "<>" )
+        let deviceTokenString: String = ( deviceToken.description as NSString )
+            .stringByTrimmingCharactersInSet( characterSet )
+            .stringByReplacingOccurrencesOfString( " ", withString: "" ) as String
+        
+        // Check if application notification settings
+        let pushBadge = settings!.types.contains(.Badge) ? "enabled" : "disabled"
+        let pushAlert = settings!.types.contains(.Alert) ? "enabled" : "disabled"
+        let pushSound = settings!.types.contains(.Sound) ? "enabled" : "disabled"
+        
+        let myDevice = UIDevice();
+        let deviceName = myDevice.name
+        let deviceModel = myDevice.model
+        let systemVersion = myDevice.systemVersion
+        let deviceId = myDevice.identifierForVendor!.UUIDString
+        
+        var appName:String?
+        if let appDisplayName = NSBundle.mainBundle().objectForInfoDictionaryKey("CFBundleDisplayName")
+        {
+            appName = appDisplayName as? String
+        } else {
+            appName = NSBundle.mainBundle().objectForInfoDictionaryKey("CFBundleName") as? String
+        }
+        
+       let appVersion = NSBundle.mainBundle().objectForInfoDictionaryKey("CFBundleVersion") as? String
+        
+        
+        let myUrl = NSURL(string: "http://ec2-52-53-247-248.us-west-1.compute.amazonaws.com/photo-app/apns/apns.php");
+        let request = NSMutableURLRequest(URL:myUrl!);
+        request.HTTPMethod = "POST";
+        
+        let postString = "task=register&appname=\(appName!)&appversion=\(appVersion!)&deviceuid=\(deviceId)&devicetoken=\(deviceTokenString)&devicename=\(deviceName)&devicemodel=\(deviceModel)&deviceversion=\(systemVersion)&pushbadge=\(pushBadge)&pushalert=\(pushAlert)&pushsound=\(pushSound)"
+        
+        request.HTTPBody = postString.dataUsingEncoding(NSUTF8StringEncoding);
+        
+        let task = NSURLSession.sharedSession().dataTaskWithRequest(request) {
+            data, response, error in
+            
+            if error != nil {
+                print("error=\(error)")
+                return
+            }
+  
+            let responseString = NSString(data: data!, encoding: NSUTF8StringEncoding)
+            print("response \(responseString!)")
+            
+        }
+        task.resume()
+        
+        
+        
+    }
+    
+    func application(application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: NSError) {
+        print(error)
+    }
+    
+    func application(application: UIApplication, didReceiveRemoteNotification userInfo: [NSObject : AnyObject])
+    {
+        print("Message details \(userInfo)")
+        
+        if let aps = userInfo["aps"] as? NSDictionary
+        {
+            if let alertMessage = aps["alert"] as? String {
+            
+            let myAlert = UIAlertController(title: "Message", message: alertMessage, preferredStyle: UIAlertControllerStyle.Alert)
+            let okAction = UIAlertAction(title: "Ok", style: UIAlertActionStyle.Default, handler: nil)
+            
+            myAlert.addAction(okAction)
+        
+            self.window?.rootViewController?.presentViewController(myAlert, animated: true, completion: nil)
+                
+            }
 
+        }
+        
+        
+    }
 
+    
 }
 
