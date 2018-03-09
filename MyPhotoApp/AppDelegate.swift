@@ -7,95 +7,106 @@
 //
 
 import UIKit
+import UserNotifications
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 
     var window: UIWindow?
     var settings: UIUserNotificationSettings?
   
-    func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
+   func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        settings = UIUserNotificationSettings(forTypes: [.Alert, .Badge, .Sound], categories: nil)
-        UIApplication.sharedApplication().registerUserNotificationSettings(settings!)
-        UIApplication.sharedApplication().registerForRemoteNotifications()
+        if #available(iOS 10.0, *) {
+            // For iOS 10 display notification (sent via APNS)
+            UNUserNotificationCenter.current().delegate = self
+
+            let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+            UNUserNotificationCenter.current().requestAuthorization(options: authOptions, completionHandler: { (isSuccess, error) in
+                if let error = error {
+                    print(error.localizedDescription)
+                }
+            })
+            
+        } else {
+            let settings: UIUserNotificationSettings =
+                UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
+            application.registerUserNotificationSettings(settings)
+        }
+        
+         application.registerForRemoteNotifications()
  
         return true
     }
 
-    func applicationWillResignActive(application: UIApplication) {
+    func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
     }
 
-    func applicationDidEnterBackground(application: UIApplication) {
+    func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
     }
 
-    func applicationWillEnterForeground(application: UIApplication) {
+    func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
     }
 
-    func applicationDidBecomeActive(application: UIApplication) {
+    func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
     }
 
-    func applicationWillTerminate(application: UIApplication) {
+    func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
     
-    func application(application: UIApplication,didRegisterForRemoteNotificationsWithDeviceToken deviceToken: NSData) {
-        //send this device token to server
-        
-        print("Got token data! \(deviceToken)")
-        
-        // Prepare device token to have a proper format
-        let characterSet: NSCharacterSet = NSCharacterSet( charactersInString: "<>" )
-        let deviceTokenString: String = ( deviceToken.description as NSString )
-            .stringByTrimmingCharactersInSet( characterSet )
-            .stringByReplacingOccurrencesOfString( " ", withString: "" ) as String
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        var deviceTokenString = ""
+        for i in 0..<deviceToken.count {
+            deviceTokenString = deviceTokenString + String(format: "%02.2hhx", arguments: [deviceToken[i]])
+        }
         
         // Check if application notification settings
-        let pushBadge = settings!.types.contains(.Badge) ? "enabled" : "disabled"
-        let pushAlert = settings!.types.contains(.Alert) ? "enabled" : "disabled"
-        let pushSound = settings!.types.contains(.Sound) ? "enabled" : "disabled"
+        let settings = UIApplication.shared.currentUserNotificationSettings
+        let pushBadge = settings!.types.contains(.badge) ? "enabled" : "disabled"
+        let pushAlert = settings!.types.contains(.alert) ? "enabled" : "disabled"
+        let pushSound = settings!.types.contains(.sound) ? "enabled" : "disabled"
         
         let myDevice = UIDevice();
         let deviceName = myDevice.name
         let deviceModel = myDevice.model
         let systemVersion = myDevice.systemVersion
-        let deviceId = myDevice.identifierForVendor!.UUIDString
+        let deviceId = myDevice.identifierForVendor?.uuid
         
         var appName:String?
-        if let appDisplayName = NSBundle.mainBundle().objectForInfoDictionaryKey("CFBundleDisplayName")
+        if let appDisplayName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName")
         {
             appName = appDisplayName as? String
         } else {
-            appName = NSBundle.mainBundle().objectForInfoDictionaryKey("CFBundleName") as? String
+            appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String
         }
         
-       let appVersion = NSBundle.mainBundle().objectForInfoDictionaryKey("CFBundleVersion") as? String
+        let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
         
         
-        let myUrl = NSURL(string: "http://ec2-52-53-247-248.us-west-1.compute.amazonaws.com/photo-app/apns/apns.php");
-        let request = NSMutableURLRequest(URL:myUrl!);
-        request.HTTPMethod = "POST";
+        let myUrl = URL(string: "http://ec2-52-53-247-248.us-west-1.compute.amazonaws.com/photo-app/apns/apns.php");
+        var request = URLRequest(url:myUrl!)
+        request.httpMethod = "POST";
         
         let postString = "task=register&appname=\(appName!)&appversion=\(appVersion!)&deviceuid=\(deviceId)&devicetoken=\(deviceTokenString)&devicename=\(deviceName)&devicemodel=\(deviceModel)&deviceversion=\(systemVersion)&pushbadge=\(pushBadge)&pushalert=\(pushAlert)&pushsound=\(pushSound)"
         
-        request.HTTPBody = postString.dataUsingEncoding(NSUTF8StringEncoding);
+        request.httpBody = postString.data(using: String.Encoding.utf8);
         
-        let task = NSURLSession.sharedSession().dataTaskWithRequest(request) {
-            data, response, error in
+        let task = URLSession.shared.dataTask(with: request) { (data: Data?, response: URLResponse?, error: Error?) in
             
             if error != nil {
-                print("error=\(error)")
+                print("error=\(String(describing: error))")
                 return
             }
   
-            let responseString = NSString(data: data!, encoding: NSUTF8StringEncoding)
+            let responseString = NSString(data: data!, encoding: String.Encoding.utf8.rawValue)
             print("response \(responseString!)")
             
         }
@@ -105,31 +116,64 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
     }
     
-    func application(application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: NSError) {
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         print(error)
     }
     
-    func application(application: UIApplication, didReceiveRemoteNotification userInfo: [NSObject : AnyObject])
-    {
-        print("Message details \(userInfo)")
-        
-        if let aps = userInfo["aps"] as? NSDictionary
-        {
-            if let alertMessage = aps["alert"] as? String {
-            
-            let myAlert = UIAlertController(title: "Message", message: alertMessage, preferredStyle: UIAlertControllerStyle.Alert)
-            let okAction = UIAlertAction(title: "Ok", style: UIAlertActionStyle.Default, handler: nil)
-            
-            myAlert.addAction(okAction)
-        
-            self.window?.rootViewController?.presentViewController(myAlert, animated: true, completion: nil)
-                
-            }
+    @available(iOS 10.0, *)
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        // if you set a member variable in didReceiveRemoteNotification, you  will know if this is from closed or background
+        print("Handle push from background or closed \(response.notification.request.content.userInfo)")
 
+        completionHandler()
+    }
+    
+ 
+    @available(iOS 10.0, *)
+    func userNotificationCenter(_ center: UNUserNotificationCenter,  willPresent notification: UNNotification, withCompletionHandler   completionHandler: @escaping (_ options:   UNNotificationPresentationOptions) -> Void) {
+        
+        // custom code to handle push while app is in the foreground
+        print("Handle push from foreground \(notification.request.content.userInfo)")
+        
+        let dict = notification.request.content.userInfo["aps"] as! NSDictionary
+        print(dict["alert"]! )
+        
+        var messageBody:String?
+        var messageTitle:String = "Alert"
+        
+        
+        
+        if let alertDict = dict["alert"] as? Dictionary<String, String> {
+            messageBody = alertDict["body"]!
+            if alertDict["title"] != nil { messageTitle  = alertDict["title"]! }
+            
+        } else {
+            messageBody = dict["alert"] as? String
         }
         
-        
+        print("Message body is \(messageBody!) ")
+        print("Message messageTitle is \(messageTitle) ")
+   
+        // Or let iOS to display message
+        completionHandler([.alert,.sound, .badge])
     }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        print(" ******************** \(userInfo)")
+        print("Article avaialble for download: \(userInfo["articleId"]!)")
+        
+        let state : UIApplicationState = application.applicationState
+        switch state {
+        case UIApplicationState.active:
+            print("If needed notify user about the message")
+        default:
+            print("Run code to download content")
+        }
+        
+        completionHandler(UIBackgroundFetchResult.newData)
+    }
+    
+    
 
     
 }

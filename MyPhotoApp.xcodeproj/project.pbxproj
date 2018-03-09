@@ -15,6 +15,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		8A1D8B742052EC8100C8AE55 /* MyPhotoApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MyPhotoApp.entitlements; sourceTree = "<group>"; };
 		94EFD2A31C693EFC00DE4C80 /* MyPhotoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyPhotoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		94EFD2A61C693EFC00DE4C80 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		94EFD2A81C693EFC00DE4C80 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -54,6 +55,7 @@
 		94EFD2A51C693EFC00DE4C80 /* MyPhotoApp */ = {
 			isa = PBXGroup;
 			children = (
+				8A1D8B742052EC8100C8AE55 /* MyPhotoApp.entitlements */,
 				94EFD2A61C693EFC00DE4C80 /* AppDelegate.swift */,
 				94EFD2A81C693EFC00DE4C80 /* ViewController.swift */,
 				94EFD2AA1C693EFC00DE4C80 /* Main.storyboard */,
@@ -97,7 +99,11 @@
 					94EFD2A21C693EFC00DE4C80 = {
 						CreatedOnToolsVersion = 7.2;
 						DevelopmentTeam = 69F8WS226X;
+						LastSwiftMigration = 0800;
 						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
 							com.apple.Push = {
 								enabled = 1;
 							};
@@ -257,6 +263,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MyPhotoApp/MyPhotoApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = MyPhotoApp/Info.plist;
@@ -264,6 +271,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.kargopolov.MyPhotoApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -271,6 +279,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MyPhotoApp/MyPhotoApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				INFOPLIST_FILE = MyPhotoApp/Info.plist;
@@ -278,6 +287,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.kargopolov.MyPhotoApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
@@ -324,6 +334,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MyPhotoApp/MyPhotoApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				INFOPLIST_FILE = MyPhotoApp/Info.plist;
@@ -331,6 +342,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.kargopolov.MyPhotoApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
+				SWIFT_VERSION = 3.0;
 			};
 			name = AdHoc;
 		};
